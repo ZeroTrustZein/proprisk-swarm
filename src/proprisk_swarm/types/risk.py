@@ -107,9 +107,7 @@ class StressScenario(BaseModel):
     rent_shock_pct: float = Field(
         default=0.0, description="Gross rent haircut percentage (-0.10 is -10%)"
     )
-    noi_shock_pct: float = Field(
-        default=0.0, description="Net operating income haircut percentage"
-    )
+    noi_shock_pct: float = Field(default=0.0, description="Net operating income haircut percentage")
     vacancy_shock_pct: float = Field(default=0.0, ge=0.0, description="Additional vacancy surge")
     opex_shock_pct: float = Field(default=0.0, ge=0.0, description="Operational expense increase")
     exit_cap_expansion_bps: int = Field(
@@ -119,12 +117,8 @@ class StressScenario(BaseModel):
         default=0, ge=0, description="Cap rate expansion in basis points"
     )
     resultant_irr: float = Field(..., description="Downside levered IRR")
-    min_dscr_observed: float = Field(
-        default=0.0, ge=0.0, description="Lowest DSCR under stress"
-    )
-    resultant_dscr: float = Field(
-        default=0.0, ge=0.0, description="Downside resultant DSCR"
-    )
+    min_dscr_observed: float = Field(default=0.0, ge=0.0, description="Lowest DSCR under stress")
+    resultant_dscr: float = Field(default=0.0, ge=0.0, description="Downside resultant DSCR")
     covenant_breached: bool = Field(
         default=False, description="Whether lender DSCR/LTV covenants fail"
     )
@@ -202,4 +196,3 @@ class UnderwritingMemo(BaseEntity):
     sign_offs: List[SignOff] = Field(
         default_factory=list, description="Autonomous agent committee votes"
     )
-

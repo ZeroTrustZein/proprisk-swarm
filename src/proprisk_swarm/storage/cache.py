@@ -132,4 +132,3 @@ def cached(
         return wrapper
 
     return decorator
-

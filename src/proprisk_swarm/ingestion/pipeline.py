@@ -3,18 +3,16 @@
 from __future__ import annotations
 
 import json
+import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-import uuid
 
 from proprisk_swarm.protocols import IngestionPipelineProtocol
 from proprisk_swarm.types.ingestion import (
-    DeedRecord,
     DeedType,
     IngestionJob,
     IngestionSourceType,
     IngestionStatus,
-    SECFiling,
     SECFilingType,
 )
 
@@ -40,22 +38,28 @@ class IngestionPipeline(IngestionPipelineProtocol):
             content = meta["content"]
             raw_bytes = content.encode("utf-8") if isinstance(content, str) else bytes(content)
 
+        # Normalize source_type
+        stype = IngestionSourceType.OFFERING_MEMORANDUM
+        for candidate in IngestionSourceType:
+            if candidate.value in source_type.lower():
+                stype = candidate
+                break
+
         job = IngestionJob(
-            job_id=job_id,
-            source_type=source_type,
-            source_path=source_path,
-            status=IngestionStatus.IN_PROGRESS,
-            metadata=meta,
+            id=job_id,
+            source_type=stype,
+            source_uri=source_path,
+            status=IngestionStatus.PROCESSING,
         )
         self._jobs[job_id] = job
 
         try:
             parsed = self.parse_payload(raw_bytes, source_type)
             job.status = IngestionStatus.COMPLETED
-            job.extracted_records_count = parsed.get("record_count", 1)
+            job.items_ingested = parsed.get("record_count", 1)
         except Exception as exc:
             job.status = IngestionStatus.FAILED
-            job.error_message = str(exc)
+            job.errors.append(str(exc))
 
         return job_id
 
@@ -78,18 +82,22 @@ class IngestionPipeline(IngestionPipelineProtocol):
 
         # Text fallback
         if "deed" in dtype:
-            records = [{
-                "parcel_number": "PARCEL-EXTRACTED",
-                "deed_type": DeedType.SPECIAL_WARRANTY.value,
-                "raw_text": text[:500],
-            }]
+            records = [
+                {
+                    "parcel_number": "PARCEL-EXTRACTED",
+                    "deed_type": DeedType.SPECIAL_WARRANTY_DEED.value,
+                    "raw_text": text[:500],
+                }
+            ]
             return {"record_count": 1, "records": records}
         elif "sec" in dtype:
-            records = [{
-                "cik": "0000000000",
-                "filing_type": SECFilingType.FORM_10K.value,
-                "raw_text": text[:500],
-            }]
+            records = [
+                {
+                    "cik": "0000000000",
+                    "filing_type": SECFilingType.FORM_10K.value,
+                    "raw_text": text[:500],
+                }
+            ]
             return {"record_count": 1, "records": records}
         else:
             return {"record_count": 1, "records": [{"raw_text": text[:500]}]}

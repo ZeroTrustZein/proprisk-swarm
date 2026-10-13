@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any, Dict
+
 from proprisk_swarm.mcp.base import BaseMCPServer
 
 
@@ -65,9 +66,21 @@ class SecFilingsMCP(BaseMCPServer):
         cik = args.get("cik", "")
         year = args.get("year", 2023)
         risks = [
-            {"topic": "interest_rates", "severity": "medium", "summary": "Rising benchmark rates may elevate debt financing costs and cap rates."},
-            {"topic": "tenant_concentration", "severity": "high", "summary": "Top 3 anchor tenants represent 34% of aggregate portfolio base rental revenue."},
-            {"topic": "environmental_climate", "severity": "low", "summary": "Physical flood and extreme weather risks mitigated by property casualty coverage."},
+            {
+                "topic": "interest_rates",
+                "severity": "medium",
+                "summary": "Rising benchmark rates may elevate debt financing costs and cap rates.",
+            },
+            {
+                "topic": "tenant_concentration",
+                "severity": "high",
+                "summary": "Top 3 anchor tenants represent 34% of aggregate portfolio base rental revenue.",
+            },
+            {
+                "topic": "environmental_climate",
+                "severity": "low",
+                "summary": "Physical flood and extreme weather risks mitigated by property casualty coverage.",
+            },
         ]
         return {"cik": cik, "fiscal_year": year, "risk_factors": risks}
 

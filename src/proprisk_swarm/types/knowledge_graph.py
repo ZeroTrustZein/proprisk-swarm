@@ -126,4 +126,3 @@ class KnowledgeGraph(BaseEntity):
             for r in self.relations
             if r.target_id == property_entity_id and r.relation_type == RelationType.ENCUMBERS
         ]
-

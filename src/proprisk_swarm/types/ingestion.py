@@ -199,4 +199,3 @@ class IngestionJob(BaseEntity):
     )
     started_at: Optional[datetime] = Field(default=None, description="Job execution start time")
     completed_at: Optional[datetime] = Field(default=None, description="Job completion time")
-

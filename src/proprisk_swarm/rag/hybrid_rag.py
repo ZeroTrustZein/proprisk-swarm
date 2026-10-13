@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from typing import Any, Dict, List, Optional, Set
+
 import numpy as np
 
 from proprisk_swarm.protocols import GraphRAGProtocol
@@ -57,14 +58,16 @@ class HybridGraphRAG(GraphRAGProtocol):
             chunk_id = f"{doc_id}-chunk-{idx}"
             tokens = set(re.findall(r"\w+", text.lower()))
             embedding = self._simple_embed(text)
-            self._chunks.append({
-                "chunk_id": chunk_id,
-                "doc_id": doc_id,
-                "text": text,
-                "tokens": tokens,
-                "embedding": embedding,
-                "metadata": meta,
-            })
+            self._chunks.append(
+                {
+                    "chunk_id": chunk_id,
+                    "doc_id": doc_id,
+                    "text": text,
+                    "tokens": tokens,
+                    "embedding": embedding,
+                    "metadata": meta,
+                }
+            )
             chunk_count += 1
 
         # Automatically extract entities for knowledge graph
@@ -77,42 +80,46 @@ class HybridGraphRAG(GraphRAGProtocol):
         prop_name = meta.get("title", f"Property {doc_id}")
 
         prop_entity = GraphEntity(
-            id=prop_id,
+            entity_id=prop_id,
             entity_type=EntityType.PROPERTY,
-            name=prop_name,
+            label=prop_name,
             properties={"doc_id": doc_id},
         )
         self.graph.add_entity(prop_entity)
 
         # Check for tenant mentions
-        tenant_match = re.search(r"tenant\s+([A-Z][a-zA-Z0-9\s&]+?)(?=[,\.\n]|$)", text, re.IGNORECASE)
+        tenant_match = re.search(
+            r"tenant\s+([A-Z][a-zA-Z0-9\s&]+?)(?=[,\.\n]|$)", text, re.IGNORECASE
+        )
         if tenant_match:
             t_name = tenant_match.group(1).strip()
             t_id = f"tenant-{abs(hash(t_name)) % 100000}"
-            t_entity = GraphEntity(id=t_id, entity_type=EntityType.TENANT, name=t_name)
+            t_entity = GraphEntity(entity_id=t_id, entity_type=EntityType.TENANT, label=t_name)
             self.graph.add_entity(t_entity)
             self.graph.add_relation(
                 GraphRelation(
                     source_id=t_id,
                     target_id=prop_id,
                     relation_type=RelationType.LEASES_TO,
-                    confidence=0.85,
+                    weight=0.85,
                 )
             )
 
-        # Check for zoning district
+        # Check for zoning district / municipality
         zoning_match = re.search(r"zone\s+([A-Z0-9\-]+)", text, re.IGNORECASE)
         if zoning_match:
             z_code = zoning_match.group(1).strip()
-            z_id = f"zone-{z_code}"
-            z_entity = GraphEntity(id=z_id, entity_type=EntityType.ZONING_DISTRICT, name=z_code)
+            z_id = f"muni-{z_code}"
+            z_entity = GraphEntity(
+                entity_id=z_id, entity_type=EntityType.MUNICIPALITY, label=z_code
+            )
             self.graph.add_entity(z_entity)
             self.graph.add_relation(
                 GraphRelation(
-                    source_id=z_id,
-                    target_id=prop_id,
-                    relation_type=RelationType.RESTRICTS,
-                    confidence=0.9,
+                    source_id=prop_id,
+                    target_id=z_id,
+                    relation_type=RelationType.SITUATED_IN,
+                    weight=0.9,
                 )
             )
 
@@ -171,16 +178,36 @@ class HybridGraphRAG(GraphRAGProtocol):
                 continue
             visited.add(curr_id)
 
-            neighbors = self.graph.get_neighbors(curr_id)
-            for node, rel in neighbors:
-                results.append({
-                    "entity_id": node.id,
-                    "name": node.name,
-                    "type": str(node.entity_type),
-                    "relation": str(rel.relation_type),
-                    "depth": depth + 1,
-                })
-                if depth + 1 < max_depth:
-                    queue.append((node.id, depth + 1))
+            out_rels = self.graph.get_outgoing_relations(curr_id)
+            for rel in out_rels:
+                target_node = self.graph.get_entity(rel.target_id)
+                if target_node:
+                    results.append(
+                        {
+                            "entity_id": target_node.entity_id,
+                            "name": target_node.label,
+                            "type": str(target_node.entity_type),
+                            "relation": str(rel.relation_type),
+                            "depth": depth + 1,
+                        }
+                    )
+                    if depth + 1 < max_depth:
+                        queue.append((target_node.entity_id, depth + 1))
+
+            in_rels = self.graph.get_incoming_relations(curr_id)
+            for rel in in_rels:
+                source_node = self.graph.get_entity(rel.source_id)
+                if source_node:
+                    results.append(
+                        {
+                            "entity_id": source_node.entity_id,
+                            "name": source_node.label,
+                            "type": str(source_node.entity_type),
+                            "relation": str(rel.relation_type),
+                            "depth": depth + 1,
+                        }
+                    )
+                    if depth + 1 < max_depth:
+                        queue.append((source_node.entity_id, depth + 1))
 
         return results

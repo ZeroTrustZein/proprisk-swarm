@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import pytest
 from proprisk_swarm.events.bus import EventBus
 from proprisk_swarm.protocols import EventBusProtocol
-from proprisk_swarm.types.events import EventPriority, EventType, SwarmEvent
+from proprisk_swarm.types.events import EventPriority, SwarmEvent
 
 
 def test_event_bus_protocol_conformance():

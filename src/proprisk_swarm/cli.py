@@ -23,9 +23,7 @@ console = Console()
 def cli(ctx: click.Context, version: bool) -> None:
     """PropRisk Swarm: Autonomous Multi-Agent Real Estate Underwriting & Risk Platform."""
     if version:
-        console.print(
-            f"[bold cyan]PropRisk Swarm[/bold cyan] version [green]{__version__}[/green]"
-        )
+        console.print(f"[bold cyan]PropRisk Swarm[/bold cyan] version [green]{__version__}[/green]")
         ctx.exit(0)
 
     if ctx.invoked_subcommand is None:
@@ -57,7 +55,9 @@ def status_cmd() -> None:
 
     table.add_row("MCP", "Deeds Endpoint", f"{settings.mcp.deeds_host}:{settings.mcp.deeds_port}")
     table.add_row("MCP", "SEC Endpoint", f"{settings.mcp.sec_host}:{settings.mcp.sec_port}")
-    table.add_row("MCP", "Zoning Endpoint", f"{settings.mcp.zoning_host}:{settings.mcp.zoning_port}")
+    table.add_row(
+        "MCP", "Zoning Endpoint", f"{settings.mcp.zoning_host}:{settings.mcp.zoning_port}"
+    )
 
     table.add_row("RAG", "Vector Dimension", str(settings.rag.vector_dimension))
     table.add_row("RAG", "Embedding Model", settings.rag.embedding_model)
@@ -109,9 +109,21 @@ def mcp_servers_cmd() -> None:
 @click.option("--deal-id", required=True, help="Unique identifier for the property deal.")
 @click.option("--asking-price", type=float, required=True, help="Initial asking price in USD.")
 @click.option("--holding-period", type=int, default=5, help="Holding period in years.")
-@click.option("--execute", is_flag=True, default=False, help="Run live multi-agent diligence pipeline.")
-@click.option("--store-path", type=click.Path(path_type=Path), default=None, help="Path to DealStore persistence JSON.")
-@click.option("--export-sql", type=click.Path(path_type=Path), default=None, help="Export result to PostgreSQL SQL file.")
+@click.option(
+    "--execute", is_flag=True, default=False, help="Run live multi-agent diligence pipeline."
+)
+@click.option(
+    "--store-path",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Path to DealStore persistence JSON.",
+)
+@click.option(
+    "--export-sql",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Export result to PostgreSQL SQL file.",
+)
 def underwrite_cmd(
     deal_id: str,
     asking_price: float,
@@ -131,7 +143,9 @@ def underwrite_cmd(
     console.print("[dim]Synthesizing DCF cash flows and audit memo...[/dim]")
 
     if not execute:
-        console.print("[bold green]Scaffold pipeline execution initialized successfully.[/bold green]")
+        console.print(
+            "[bold green]Scaffold pipeline execution initialized successfully.[/bold green]"
+        )
         return
 
     from proprisk_swarm.agents.orchestrator import SwarmOrchestrator
@@ -173,14 +187,23 @@ def underwrite_cmd(
                 f"[bold green]PostgreSQL SQL script exported to [yellow]{export_sql}[/yellow][/bold green]"
             )
     else:
-        console.print(f"[bold red]Validation failed: {result.get('validation', {}).get('errors')}[/bold red]")
+        console.print(
+            f"[bold red]Validation failed: {result.get('validation', {}).get('errors')}[/bold red]"
+        )
 
 
 @cli.command("export-sql")
 @click.option("--deal-id", required=True, help="Unique identifier for the property deal.")
-@click.option("--store-path", type=click.Path(path_type=Path), default=None, help="Path to DealStore persistence JSON.")
+@click.option(
+    "--store-path",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Path to DealStore persistence JSON.",
+)
 @click.option("--schema", default="public", help="PostgreSQL schema name.")
-@click.option("--output", "-o", type=click.Path(path_type=Path), default=None, help="Output .sql file path.")
+@click.option(
+    "--output", "-o", type=click.Path(path_type=Path), default=None, help="Output .sql file path."
+)
 def export_sql_cmd(
     deal_id: str,
     store_path: Optional[Path] = None,
@@ -216,7 +239,13 @@ def export_sql_cmd(
 
 @cli.command("validate-export")
 @click.argument("input_file", type=click.Path(exists=True, path_type=Path))
-@click.option("--output", "-o", type=click.Path(path_type=Path), default=None, help="Optional output path for cleaned JSON.")
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Optional output path for cleaned JSON.",
+)
 def validate_export_cmd(input_file: Path, output: Optional[Path] = None) -> None:
     """Clean and validate raw deal export JSON against schema."""
     from proprisk_swarm.storage.deal_store import DealStore
@@ -241,7 +270,9 @@ def validate_export_cmd(input_file: Path, output: Optional[Path] = None) -> None
     table.add_column("Value", style="green")
     table.add_row("Deal ID", str(cleaned.get("deal_id")))
     table.add_row("Title", str(cleaned.get("deal", {}).get("title", "N/A")))
-    table.add_row("Target Price", f"${cleaned.get('deal', {}).get('target_purchase_price', 0):,.2f}")
+    table.add_row(
+        "Target Price", f"${cleaned.get('deal', {}).get('target_purchase_price', 0):,.2f}"
+    )
     table.add_row("Deeds Records", str(len(cleaned.get("deeds", []))))
     table.add_row("SEC Filings", str(len(cleaned.get("filings", []))))
     console.print(table)

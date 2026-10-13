@@ -371,4 +371,3 @@ class PropertyDeal(BaseEntity):
         if self.physical.rentable_square_feet == 0.0:
             return 0.0
         return self.target_purchase_price / self.physical.rentable_square_feet
-

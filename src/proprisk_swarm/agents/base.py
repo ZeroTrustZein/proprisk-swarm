@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
 import uuid
+from typing import Any, Dict, List, Optional
 
 from proprisk_swarm.protocols import AgentProtocol
 from proprisk_swarm.types.agents import AgentRole, AgentState
@@ -42,7 +42,9 @@ class BaseAgent(AgentProtocol):
     def can_handle(self, task_type: str) -> bool:
         """Check whether this agent supports the specified task type."""
         norm_task = task_type.lower().replace(".", "_").replace("-", "_")
-        return norm_task in [t.lower().replace(".", "_").replace("-", "_") for t in self._supported_tasks]
+        return norm_task in [
+            t.lower().replace(".", "_").replace("-", "_") for t in self._supported_tasks
+        ]
 
     def execute_task(self, task_payload: Dict[str, Any]) -> Dict[str, Any]:
         """Execute assigned diligence task."""

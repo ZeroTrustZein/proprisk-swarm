@@ -80,6 +80,7 @@ def test_get_settings_singleton():
 
 def test_agent_protocol_conformance():
     """Verify mock agent implements AgentProtocol."""
+
     class MockAgent:
         @property
         def agent_id(self) -> str:
@@ -104,6 +105,7 @@ def test_agent_protocol_conformance():
 
 def test_mcp_server_protocol_conformance():
     """Verify mock MCP server implements MCPServerProtocol."""
+
     class MockMCPServer:
         @property
         def server_name(self) -> str:
@@ -126,6 +128,7 @@ def test_mcp_server_protocol_conformance():
 
 def test_ingestion_pipeline_protocol_conformance():
     """Verify ingestion pipeline implements IngestionPipelineProtocol."""
+
     class MockIngestion:
         def ingest_document(self, source_path: str, source_type: str, metadata=None) -> str:
             return f"job-{source_type}-001"
@@ -141,6 +144,7 @@ def test_ingestion_pipeline_protocol_conformance():
 
 def test_graph_rag_protocol_conformance():
     """Verify GraphRAG pipeline implements GraphRAGProtocol."""
+
     class MockGraphRAG:
         def index_document(self, doc_id: str, content: str, metadata=None) -> int:
             return 3
@@ -159,6 +163,7 @@ def test_graph_rag_protocol_conformance():
 
 def test_valuation_engine_protocol_conformance():
     """Verify valuation engine implements ValuationEngineProtocol."""
+
     class MockValuation:
         def compute_dcf(self, purchase_price, cash_flows, discount_rate, terminal_cap_rate):
             return {
@@ -179,6 +184,7 @@ def test_valuation_engine_protocol_conformance():
 
 def test_event_bus_protocol_conformance():
     """Verify event bus implements EventBusProtocol."""
+
     class MockEventBus:
         def __init__(self):
             self.events = []

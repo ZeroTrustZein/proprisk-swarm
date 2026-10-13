@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+
 import pytest
 from click.testing import CliRunner
 
 from proprisk_swarm.cli import cli
 from proprisk_swarm.storage.deal_store import DealStore
-from proprisk_swarm.types.property import PropertyDeal, DealStatus
+from proprisk_swarm.types.property import PropertyDeal
 
 
 def test_clean_str_null_bytes_and_whitespace():
@@ -63,8 +64,8 @@ def test_export_to_sql_valid(sample_deal: PropertyDeal):
     sql = store.export_to_sql(sample_deal.id, schema="real_estate_dw")
     assert "CREATE SCHEMA IF NOT EXISTS real_estate_dw;" in sql
     assert "CREATE TABLE IF NOT EXISTS real_estate_dw.deals" in sql
-    assert f"INSERT INTO real_estate_dw.deals" in sql
-    assert f"ON CONFLICT (deal_id) DO UPDATE" in sql
+    assert "INSERT INTO real_estate_dw.deals" in sql
+    assert "ON CONFLICT (deal_id) DO UPDATE" in sql
     assert sample_deal.id in sql
 
 

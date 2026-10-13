@@ -229,4 +229,3 @@ class DCFValuationResult(BaseEntity):
     model_checksum: str = Field(
         ..., description="Deterministic hash of inputs and formulas for audit trail"
     )
-

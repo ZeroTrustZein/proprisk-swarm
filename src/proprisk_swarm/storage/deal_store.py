@@ -572,4 +572,3 @@ class DealStore:
         self._deeds.clear()
         self._filings.clear()
         self._oms.clear()
-

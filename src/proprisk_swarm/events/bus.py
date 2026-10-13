@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, List, Optional
 from collections import defaultdict
+from typing import Any, Callable, Dict, List, Optional
 
 from proprisk_swarm.protocols import EventBusProtocol
-from proprisk_swarm.types.events import EventPriority, EventType, SwarmEvent
+from proprisk_swarm.types.events import EventPriority, SwarmEvent
 
 
 class EventBus(EventBusProtocol):

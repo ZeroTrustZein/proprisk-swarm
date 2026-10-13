@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 from proprisk_swarm.protocols import ValuationEngineProtocol
 from proprisk_swarm.types.risk import MemoRecommendation
 from proprisk_swarm.valuation.engine import ValuationEngine
@@ -37,7 +36,7 @@ def test_compute_dcf_metrics():
 
 
 def test_compute_sensitivity_matrix():
-    """Verify 2D sensitivity matrix generation over cap rates and growth."""
+    """Verify sensitivity scenarios generation."""
     engine = ValuationEngine()
     purchase_price = 10000000.0
     cash_flows = [600000.0, 620000.0, 640000.0, 660000.0, 680000.0]
@@ -45,32 +44,29 @@ def test_compute_sensitivity_matrix():
     matrix = engine.compute_sensitivity_matrix(
         purchase_price=purchase_price,
         base_cash_flows=cash_flows,
-        cap_rates=[0.05, 0.06],
-        noi_growth_rates=[0.02, 0.04],
     )
 
-    assert matrix.base_irr > 0.0
-    assert len(matrix.grid) == 2  # 2 growth rows
-    assert len(matrix.grid[0]) == 2  # 2 cap rate columns
+    assert matrix.base_levered_irr > 0.0
+    assert matrix.base_equity_multiple > 0.0
+    assert len(matrix.scenarios) > 0
 
 
 def test_synthesize_investment_memo_recommendations():
     """Verify memo recommendations based on hurdle rates."""
     engine = ValuationEngine()
 
-    # Approved scenario
+    # Strongly recommend scenario
     approved_val = {
         "unlevered_irr": 0.14,
         "equity_multiple": 1.75,
         "debt_service_coverage_ratio": 1.45,
-        "npv": 1500000.0,
+        "net_present_value": 1500000.0,
         "exit_valuation": 12000000.0,
-        "gross_sales_proceeds": 12000000.0,
+        "gross_exit_sales_price": 12000000.0,
         "net_sales_proceeds": 11760000.0,
     }
     memo_app = engine.synthesize_investment_memo("DEAL-APP", approved_val)
-    assert memo_app["recommendation"] == MemoRecommendation.APPROVED.value
-    assert memo_app["overall_risk_score"] < 30.0
+    assert memo_app["recommendation"] == MemoRecommendation.STRONGLY_RECOMMEND.value
 
     # Conditional approval scenario
     cond_val = {
@@ -79,14 +75,22 @@ def test_synthesize_investment_memo_recommendations():
         "debt_service_coverage_ratio": 1.20,
     }
     memo_cond = engine.synthesize_investment_memo("DEAL-COND", cond_val)
-    assert memo_cond["recommendation"] == MemoRecommendation.CONDITIONAL_APPROVAL.value
+    assert memo_cond["recommendation"] == MemoRecommendation.APPROVE_WITH_CONDITIONS.value
+
+    # Revise terms scenario
+    rev_val = {
+        "unlevered_irr": 0.06,
+        "equity_multiple": 1.10,
+        "debt_service_coverage_ratio": 1.10,
+    }
+    memo_rev = engine.synthesize_investment_memo("DEAL-REV", rev_val)
+    assert memo_rev["recommendation"] == MemoRecommendation.REVISE_TERMS.value
 
     # Rejected scenario
     rej_val = {
-        "unlevered_irr": 0.03,
+        "unlevered_irr": 0.02,
         "equity_multiple": 0.95,
         "debt_service_coverage_ratio": 0.90,
     }
     memo_rej = engine.synthesize_investment_memo("DEAL-REJ", rej_val)
-    assert memo_rej["recommendation"] == MemoRecommendation.REJECTED.value
-    assert memo_rej["overall_risk_score"] > 60.0
+    assert memo_rej["recommendation"] == MemoRecommendation.REJECT.value

@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from pathlib import Path
-import pytest
+
 from click.testing import CliRunner
 
 from proprisk_swarm.agents.base import BaseAgent
+from proprisk_swarm.agents.orchestrator import SwarmOrchestrator
 from proprisk_swarm.agents.specialized import (
     CreditRiskUnderwriterAgent,
     DCFValuationAgent,
@@ -14,7 +15,6 @@ from proprisk_swarm.agents.specialized import (
     SecDiligenceAnalystAgent,
     ZoningComplianceAgent,
 )
-from proprisk_swarm.agents.orchestrator import SwarmOrchestrator
 from proprisk_swarm.cli import cli
 from proprisk_swarm.protocols import AgentProtocol
 from proprisk_swarm.types.agents import AgentRole, AgentState
@@ -38,6 +38,7 @@ def test_agent_protocol_conformance():
 
 def test_base_agent_can_handle_and_error():
     """Verify task matching and execution error capture in BaseAgent."""
+
     class DummyAgent(BaseAgent):
         def _process(self, payload: dict) -> dict:
             if payload.get("fail"):
@@ -75,7 +76,9 @@ def test_specialized_agents_execution():
     assert "risk_factors" in sec_res
 
     zoning_agent = ZoningComplianceAgent()
-    zoning_res = zoning_agent.execute_task({"zone_code": "CBD", "proposed_gfa": 100000.0, "lot_area_sqft": 20000.0})
+    zoning_res = zoning_agent.execute_task(
+        {"zone_code": "CBD", "proposed_gfa": 100000.0, "lot_area_sqft": 20000.0}
+    )
     assert zoning_res["status"] == "success"
     assert zoning_res["is_far_compliant"] is True
 
@@ -123,12 +126,17 @@ def test_cli_underwrite_live_execution(tmp_path: Path):
         cli,
         [
             "underwrite",
-            "--deal-id", "DEAL-CLI-LIVE",
-            "--asking-price", "8000000",
-            "--holding-period", "5",
+            "--deal-id",
+            "DEAL-CLI-LIVE",
+            "--asking-price",
+            "8000000",
+            "--holding-period",
+            "5",
             "--execute",
-            "--store-path", str(store_file),
-            "--export-sql", str(sql_file),
+            "--store-path",
+            str(store_file),
+            "--export-sql",
+            str(sql_file),
         ],
     )
 

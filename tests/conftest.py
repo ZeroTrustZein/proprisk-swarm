@@ -643,4 +643,3 @@ def sample_swarm_event() -> SwarmEvent:
         priority=EventPriority.NORMAL,
         payload={"verified": True, "encumbrances_found": 1},
     )
-

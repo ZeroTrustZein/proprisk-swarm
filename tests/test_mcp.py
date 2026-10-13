@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import pytest
 from proprisk_swarm.mcp.deeds import MunicipalDeedsMCP
+from proprisk_swarm.mcp.registry import MCPRegistry
 from proprisk_swarm.mcp.sec import SecFilingsMCP
 from proprisk_swarm.mcp.zoning import ZoningOrdinanceMCP
-from proprisk_swarm.mcp.registry import MCPRegistry
 from proprisk_swarm.protocols import MCPServerProtocol
 
 

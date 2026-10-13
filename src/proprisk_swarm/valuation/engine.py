@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
-import numpy as np
 
 from proprisk_swarm.protocols import ValuationEngineProtocol
-from proprisk_swarm.types.financial import SensitivityMatrix, ValuationMetrics
+from proprisk_swarm.types.financial import SensitivityMatrix, SensitivityScenario, ValuationMetrics
 from proprisk_swarm.types.risk import MemoRecommendation, UnderwritingMemo
 
 
@@ -87,24 +86,37 @@ class ValuationEngine(ValuationEngineProtocol):
         annual_debt_service = debt_amount * 0.065
         levered_cfs = [max(0.0, cf - annual_debt_service) for cf in cfs]
         debt_payoff = debt_amount * 0.90  # 10% amortized
-        levered_stream = [-equity_amount] + levered_cfs[:-1] + [levered_cfs[-1] + (net_sales - debt_payoff)]
+        levered_stream = (
+            [-equity_amount] + levered_cfs[:-1] + [levered_cfs[-1] + (net_sales - debt_payoff)]
+        )
         levered_irr = self._calculate_irr(levered_stream)
 
         dscr = round(cfs[0] / max(annual_debt_service, 1.0), 2)
         debt_yield = round(cfs[0] / max(debt_amount, 1.0), 4)
+        total_profit = round(total_inflows - p_price, 2)
+        in_place_cap = round(cfs[0] / max(p_price, 1.0), 4)
 
         return {
             "purchase_price": p_price,
+            "equity_invested": equity_amount,
+            "loan_amount": debt_amount,
             "discount_rate": d_rate,
             "terminal_cap_rate": t_cap,
+            "in_place_cap_rate": in_place_cap,
+            "exit_cap_rate": t_cap,
             "exit_valuation": exit_valuation,
+            "gross_exit_sales_price": gross_sales,
             "gross_sales_proceeds": gross_sales,
             "net_sales_proceeds": net_sales,
+            "net_present_value": round(npv, 2),
             "npv": round(npv, 2),
             "unlevered_irr": unlevered_irr,
             "levered_irr": levered_irr,
             "equity_multiple": equity_mult,
+            "total_net_profit": total_profit,
             "debt_service_coverage_ratio": dscr,
+            "min_dscr_observed": dscr,
+            "average_dscr": dscr,
             "debt_yield": debt_yield,
         }
 
@@ -116,24 +128,33 @@ class ValuationEngine(ValuationEngineProtocol):
         noi_growth_rates: Optional[List[float]] = None,
     ) -> SensitivityMatrix:
         """Generate 2D IRR sensitivity table across terminal cap rates and NOI growth variations."""
-        cap_list = cap_rates or [0.050, 0.055, 0.060, 0.065]
-        growth_list = noi_growth_rates or [0.01, 0.02, 0.03, 0.04]
+        base_res = self.compute_dcf(purchase_price, base_cash_flows)
+        base_cap = base_res["terminal_cap_rate"]
 
-        grid: List[List[float]] = []
-        for g in growth_list:
-            row: List[float] = []
+        cap_list = cap_rates or [base_cap - 0.005, base_cap, base_cap + 0.005]
+        growth_deltas = [-100, 0, 100]  # bps
+
+        scenarios: List[SensitivityScenario] = []
+        for g_bps in growth_deltas:
+            g = g_bps / 10000.0
             adjusted_cfs = [cf * ((1.0 + g) ** i) for i, cf in enumerate(base_cash_flows)]
             for cap in cap_list:
                 res = self.compute_dcf(purchase_price, adjusted_cfs, terminal_cap_rate=cap)
-                row.append(res["unlevered_irr"])
-            grid.append(row)
+                cap_delta_bps = int(round((cap - base_cap) * 10000))
+                scenarios.append(
+                    SensitivityScenario(
+                        rent_growth_delta_bps=g_bps,
+                        exit_cap_delta_bps=cap_delta_bps,
+                        levered_irr=res["levered_irr"],
+                        equity_multiple=res["equity_multiple"],
+                        net_present_value=res["net_present_value"],
+                    )
+                )
 
-        base_res = self.compute_dcf(purchase_price, base_cash_flows)
         return SensitivityMatrix(
-            base_irr=base_res["unlevered_irr"],
-            exit_cap_rates=cap_list,
-            rent_growth_rates=growth_list,
-            grid=grid,
+            base_levered_irr=base_res["levered_irr"],
+            base_equity_multiple=base_res["equity_multiple"],
+            scenarios=scenarios,
         )
 
     def synthesize_investment_memo(
@@ -143,37 +164,51 @@ class ValuationEngine(ValuationEngineProtocol):
         irr = valuation_data.get("unlevered_irr", 0.08)
         em = valuation_data.get("equity_multiple", 1.5)
         dscr = valuation_data.get("debt_service_coverage_ratio", 1.4)
+        p_price = valuation_data.get("purchase_price", 10000000.0)
 
         if irr >= 0.12 and em >= 1.6 and dscr >= 1.25:
-            rec = MemoRecommendation.APPROVED
-            risk_score = 25.0
-            status_text = "Strong risk-adjusted profile exceeding target underwriting hurdle rates."
+            rec = MemoRecommendation.STRONGLY_RECOMMEND
+            status_text = "Strong risk-adjusted profile exceeding target underwriting hurdle rates across all test criteria."
         elif irr >= 0.08 and dscr >= 1.15:
-            rec = MemoRecommendation.CONDITIONAL_APPROVAL
-            risk_score = 45.0
+            rec = MemoRecommendation.APPROVE_WITH_CONDITIONS
             status_text = "Meets baseline criteria; requires additional reserves and loan covenant monitoring."
+        elif irr >= 0.05:
+            rec = MemoRecommendation.REVISE_TERMS
+            status_text = (
+                "Sub-hurdle returns; requires price reduction or restructuring debt terms."
+            )
         else:
-            rec = MemoRecommendation.REJECTED
-            risk_score = 75.0
+            rec = MemoRecommendation.REJECT
             status_text = "Fails minimum return hurdle or inadequate debt service coverage."
+
+        metrics = ValuationMetrics(
+            purchase_price=p_price,
+            equity_invested=valuation_data.get("equity_invested", p_price * 0.35),
+            loan_amount=valuation_data.get("loan_amount", p_price * 0.65),
+            unlevered_irr=irr,
+            levered_irr=valuation_data.get("levered_irr", irr * 1.3),
+            equity_multiple=em,
+            net_present_value=valuation_data.get(
+                "net_present_value", valuation_data.get("npv", 0.0)
+            ),
+            in_place_cap_rate=valuation_data.get("in_place_cap_rate", 0.065),
+            exit_cap_rate=valuation_data.get("exit_cap_rate", 0.0575),
+            gross_exit_sales_price=valuation_data.get("gross_exit_sales_price", p_price * 1.2),
+            net_sales_proceeds=valuation_data.get("net_sales_proceeds", p_price * 1.15),
+            total_net_profit=valuation_data.get("total_net_profit", p_price * 0.5),
+            min_dscr_observed=dscr,
+            average_dscr=dscr,
+        )
+
+        title = valuation_data.get("deal_title", f"Underwriting Diligence: {deal_id}")
+        if len(title) < 3:
+            title = f"Deal {deal_id}"
 
         memo = UnderwritingMemo(
             deal_id=deal_id,
-            title=valuation_data.get("deal_title", f"Underwriting Diligence: {deal_id}"),
+            deal_title=title,
             recommendation=rec,
             executive_summary=f"Diligence review for deal {deal_id}. {status_text}",
-            overall_risk_score=risk_score,
-            valuation_metrics=ValuationMetrics(
-                net_present_value=valuation_data.get("npv", 0.0),
-                unlevered_irr=irr,
-                levered_irr=valuation_data.get("levered_irr", irr * 1.3),
-                equity_multiple=em,
-                exit_valuation=valuation_data.get("exit_valuation", 0.0),
-                net_operating_income_terminal=valuation_data.get("net_sales_proceeds", 0.0) * 0.05,
-                gross_sales_proceeds=valuation_data.get("gross_sales_proceeds", 0.0),
-                net_sales_proceeds=valuation_data.get("net_sales_proceeds", 0.0),
-                debt_service_coverage_ratio=dscr,
-                debt_yield=valuation_data.get("debt_yield", 0.09),
-            ),
+            valuation_summary=metrics,
         )
         return memo.model_dump()

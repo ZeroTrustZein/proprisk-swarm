@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any, Dict
+
 from proprisk_swarm.mcp.base import BaseMCPServer
 
 
@@ -64,28 +65,31 @@ class MunicipalDeedsMCP(BaseMCPServer):
 
     def _handle_search_deeds(self, args: Dict[str, Any]) -> Dict[str, Any]:
         parcel_id = args.get("parcel_id", "")
+        if not parcel_id or len(parcel_id) < 3:
+            parcel_id = "01-0203-0405-0000"
         county = args.get("county", "Travis")
-        # Deterministic deed records
         records = [
             {
                 "parcel_number": parcel_id,
+                "document_number": "DOC-2021-140288",
+                "recording_date": "2021-06-15",
                 "grantor": "Apex Holdings LP",
                 "grantee": "Metropolitan Realty LLC",
-                "deed_type": "special_warranty",
-                "consideration": 45000000.0,
-                "recording_date": "2021-06-15",
-                "county": county,
-                "book_page": "Vol 1402, Pg 88",
+                "deed_type": "special_warranty_deed",
+                "consideration_amount": 45000000.0,
+                "legal_description": "Lot 1, Block A, Downtown Austin Addition",
+                "county_name": county,
             },
             {
                 "parcel_number": parcel_id,
+                "document_number": "DOC-2015-110542",
+                "recording_date": "2015-11-20",
                 "grantor": "Heritage Ranch Partners",
                 "grantee": "Apex Holdings LP",
-                "deed_type": "warranty",
-                "consideration": 32000000.0,
-                "recording_date": "2015-11-20",
-                "county": county,
-                "book_page": "Vol 1105, Pg 42",
+                "deed_type": "special_warranty_deed",
+                "consideration_amount": 32000000.0,
+                "legal_description": "Lot 1, Block A, Downtown Austin Addition",
+                "county_name": county,
             },
         ]
         return {"parcel_id": parcel_id, "county": county, "deeds": records, "count": len(records)}
@@ -106,7 +110,12 @@ class MunicipalDeedsMCP(BaseMCPServer):
         parcel_id = args.get("parcel_id", "")
         easements = [
             {"type": "utility", "grantee": "City Power & Light", "width_ft": 10.0, "impact": "low"},
-            {"type": "drainage", "grantee": "Municipal Water District", "width_ft": 15.0, "impact": "low"},
+            {
+                "type": "drainage",
+                "grantee": "Municipal Water District",
+                "width_ft": 15.0,
+                "impact": "low",
+            },
         ]
         return {
             "parcel_id": parcel_id,

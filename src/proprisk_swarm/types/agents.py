@@ -129,4 +129,3 @@ class SwarmWorkflowState(BaseEntity):
         default=False, description="Whether workflow reached IC decision or terminal failure"
     )
     final_memo_id: Optional[str] = Field(default=None, description="Generated UnderwritingMemo ID")
-

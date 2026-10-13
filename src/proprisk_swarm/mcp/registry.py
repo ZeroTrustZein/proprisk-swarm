@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
-from proprisk_swarm.protocols import MCPServerProtocol
+
 from proprisk_swarm.mcp.deeds import MunicipalDeedsMCP
 from proprisk_swarm.mcp.sec import SecFilingsMCP
 from proprisk_swarm.mcp.zoning import ZoningOrdinanceMCP
+from proprisk_swarm.protocols import MCPServerProtocol
 
 
 class MCPRegistry:
@@ -27,7 +28,9 @@ class MCPRegistry:
         """List registered server names."""
         return list(self._servers.keys())
 
-    def call_tool(self, server_name: str, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    def call_tool(
+        self, server_name: str, tool_name: str, arguments: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Route tool invocation to specified server."""
         server = self.get_server(server_name)
         if not server:

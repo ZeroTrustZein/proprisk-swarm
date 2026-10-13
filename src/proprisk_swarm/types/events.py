@@ -64,4 +64,3 @@ class SwarmEvent(BaseModel):
         default_factory=list, description="Diagnostic error stack traces if applicable"
     )
     timestamp: Any = Field(default_factory=utc_now, description="Event emission UTC timestamp")
-

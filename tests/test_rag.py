@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 from proprisk_swarm.protocols import GraphRAGProtocol
 from proprisk_swarm.rag.hybrid_rag import HybridGraphRAG
 

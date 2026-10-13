@@ -566,7 +566,10 @@ def test_risk_models():
     assert RiskCategory._missing_("invalid") is None
     assert RiskSeverity._missing_("critical") == RiskSeverity.CRITICAL
     assert RiskSeverity._missing_("invalid") is None
-    assert MemoRecommendation._missing_("approve_with_conditions") == MemoRecommendation.APPROVE_WITH_CONDITIONS
+    assert (
+        MemoRecommendation._missing_("approve_with_conditions")
+        == MemoRecommendation.APPROVE_WITH_CONDITIONS
+    )
     assert MemoRecommendation._missing_("invalid") is None
 
     finding = RiskFinding(

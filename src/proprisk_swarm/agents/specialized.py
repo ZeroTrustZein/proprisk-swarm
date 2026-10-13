@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from proprisk_swarm.agents.base import BaseAgent
 from proprisk_swarm.mcp.deeds import MunicipalDeedsMCP
@@ -134,7 +134,9 @@ class DCFValuationAgent(BaseAgent):
         self.engine = engine or ValuationEngine()
 
     def _process(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        purchase_price = float(payload.get("purchase_price", payload.get("target_purchase_price", 10000000.0)))
+        purchase_price = float(
+            payload.get("purchase_price", payload.get("target_purchase_price", 10000000.0))
+        )
         cash_flows = payload.get("cash_flows")
         if not cash_flows:
             # Generate synthetic 5-year growing cash flows based on in-place NOI
