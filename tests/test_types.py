@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
+
 import pytest
 from pydantic import ValidationError
 
@@ -10,7 +11,6 @@ from proprisk_swarm.types import (
     AgentAuditEntry,
     AgentMessage,
     AgentRole,
-    AgentState,
     AgentTask,
     AnnualCashFlow,
     BaseEntity,
@@ -114,6 +114,7 @@ def test_property_models():
             gross_square_feet=50000.0,
             rentable_square_feet=55000.0,
             year_built=2015,
+            site_area_acres=1.5,
         )
 
     # UnitMix & UnitSpec
@@ -225,8 +226,6 @@ def test_property_models():
     assert deal_uncalc.price_per_sqft == 0.0
 
     # Zero asking price edge case
-    deal_zero = deal.model_copy(update={"asking_price": 0.0})
-    # model has gt=0.0 on asking_price so it fails validation on creation:
     with pytest.raises(ValidationError):
         PropertyDeal(
             title="Apex Tower",
