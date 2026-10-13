@@ -134,7 +134,46 @@ def underwrite_cmd(
         console.print("[bold green]Scaffold pipeline execution initialized successfully.[/bold green]")
         return
 
-    console.print("[yellow]Full live agent execution is available in subsequent stages.[/yellow]")
+    from proprisk_swarm.agents.orchestrator import SwarmOrchestrator
+    from proprisk_swarm.storage.deal_store import DealStore
+
+    store = DealStore(persistence_path=store_path)
+    if store_path and store_path.exists():
+        try:
+            store.load_from_disk()
+        except Exception:
+            pass
+
+    orchestrator = SwarmOrchestrator(deal_store=store)
+    result = orchestrator.run_diligence_pipeline(
+        deal_id=deal_id,
+        deal_payload={
+            "deal_id": deal_id,
+            "target_purchase_price": asking_price,
+            "holding_period": holding_period,
+            "in_place_noi": asking_price * 0.065,
+        },
+    )
+
+    if result.get("is_valid"):
+        pkg = result["package"]
+        store.import_deal_package(pkg)
+        if store_path:
+            store.save_to_disk()
+
+        rec = pkg.get("memo", {}).get("recommendation", "UNKNOWN")
+        console.print(
+            f"[bold green]Swarm underwriting completed successfully. Recommendation: [cyan]{rec}[/cyan][/bold green]"
+        )
+
+        if export_sql:
+            sql = store.export_to_sql(deal_id)
+            export_sql.write_text(sql, encoding="utf-8")
+            console.print(
+                f"[bold green]PostgreSQL SQL script exported to [yellow]{export_sql}[/yellow][/bold green]"
+            )
+    else:
+        console.print(f"[bold red]Validation failed: {result.get('validation', {}).get('errors')}[/bold red]")
 
 
 @cli.command("export-sql")

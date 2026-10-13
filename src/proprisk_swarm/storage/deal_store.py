@@ -138,6 +138,54 @@ class DealStore:
             "offering_memorandum": om.model_dump(mode="json") if om else None,
         }
 
+    def import_deal_package(self, package: Dict[str, Any]) -> None:
+        """Import a cleaned and validated raw export package into DealStore."""
+        deal_id = package.get("deal_id")
+        if not deal_id:
+            return
+
+        deal_data = package.get("deal")
+        if deal_data and isinstance(deal_data, dict):
+            try:
+                deal = PropertyDeal.model_validate(deal_data)
+                self.save_deal(deal)
+            except Exception:
+                pass
+
+        memo_data = package.get("memo")
+        if memo_data and isinstance(memo_data, dict):
+            try:
+                memo = UnderwritingMemo.model_validate(memo_data)
+                self.save_memo(memo)
+            except Exception:
+                pass
+
+        val_data = package.get("valuation")
+        if val_data and isinstance(val_data, dict):
+            try:
+                val = DCFValuationResult.model_validate(val_data)
+                self.save_valuation(deal_id, val)
+            except Exception:
+                pass
+
+        deeds = package.get("deeds", [])
+        if isinstance(deeds, list):
+            for d in deeds:
+                try:
+                    deed = DeedRecord.model_validate(d)
+                    self.add_deed(deal_id, deed)
+                except Exception:
+                    pass
+
+        filings = package.get("filings", [])
+        if isinstance(filings, list):
+            for f in filings:
+                try:
+                    filing = SECFiling.model_validate(f)
+                    self.add_filing(deal_id, filing)
+                except Exception:
+                    pass
+
     # -------------------------------------------------------------------------
     # Clean, Validate & SQL Warehouse Export (PostgreSQL)
     # -------------------------------------------------------------------------

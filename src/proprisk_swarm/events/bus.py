@@ -29,9 +29,11 @@ class EventBus(EventBusProtocol):
     def publish(self, event_type: str, payload: Dict[str, Any]) -> None:
         """Publish event payload to subscribers matching event_type and wildcard '*'."""
         deal_id = payload.get("deal_id", "global")
+        source_role = payload.get("source_role", "system")
         event = SwarmEvent(
             event_type=event_type,
             deal_id=deal_id,
+            source_role=source_role,
             payload=payload,
             priority=payload.get("priority", EventPriority.NORMAL),
         )
