@@ -284,3 +284,7 @@ def validate_export_cmd(input_file: Path, output: Optional[Path] = None) -> None
     if output:
         output.write_text(json.dumps(cleaned, indent=2), encoding="utf-8")
         console.print(f"[dim]Cleaned data written to {output}[/dim]")
+
+
+if __name__ == "__main__":
+    cli()
