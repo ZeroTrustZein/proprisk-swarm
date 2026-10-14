@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from unittest.mock import patch
 
 import pytest
@@ -201,41 +202,49 @@ def test_event_bus_protocol_conformance():
     assert len(bus.events) == 1
 
 
+def _strip_ansi(text: str) -> str:
+    """Strip ANSI escape sequences from text."""
+    return re.sub(r"\x1b\[[0-9;]*[a-zA-Z]", "", text)
+
+
 def test_cli_version_flag(cli_runner: CliRunner):
     """Verify CLI --version output."""
     result = cli_runner.invoke(cli, ["--version"])
     assert result.exit_code == 0
-    assert "0.1.0" in result.output
+    assert "0.1.0" in _strip_ansi(result.output)
 
 
 def test_cli_help(cli_runner: CliRunner):
     """Verify CLI --help shows core commands."""
     result = cli_runner.invoke(cli, ["--help"])
     assert result.exit_code == 0
-    assert "status" in result.output
-    assert "mcp-servers" in result.output
-    assert "underwrite" in result.output
-    assert "export-sql" in result.output
-    assert "validate-export" in result.output
+    clean_out = _strip_ansi(result.output)
+    assert "status" in clean_out
+    assert "mcp-servers" in clean_out
+    assert "underwrite" in clean_out
+    assert "export-sql" in clean_out
+    assert "validate-export" in clean_out
 
 
 def test_cli_status(cli_runner: CliRunner):
     """Verify CLI status displays system configuration."""
     result = cli_runner.invoke(cli, ["status"])
     assert result.exit_code == 0
-    assert "proprisk-swarm" in result.output
-    assert "8201" in result.output
-    assert "8202" in result.output
-    assert "8203" in result.output
+    clean_out = _strip_ansi(result.output)
+    assert "proprisk-swarm" in clean_out
+    assert "8201" in clean_out
+    assert "8202" in clean_out
+    assert "8203" in clean_out
 
 
 def test_cli_mcp_servers(cli_runner: CliRunner):
     """Verify CLI mcp-servers lists diligence server endpoints."""
     result = cli_runner.invoke(cli, ["mcp-servers"])
     assert result.exit_code == 0
-    assert "Municipal Deeds" in result.output
-    assert "SEC EDGAR" in result.output
-    assert "Municipal Zoning" in result.output
+    clean_out = _strip_ansi(result.output)
+    assert "Municipal Deeds" in clean_out
+    assert "SEC EDGAR" in clean_out
+    assert "Municipal Zoning" in clean_out
 
 
 def test_cli_underwrite(cli_runner: CliRunner):
@@ -245,16 +254,17 @@ def test_cli_underwrite(cli_runner: CliRunner):
         ["underwrite", "--deal-id", "deal-austin-multifamily", "--asking-price", "25000000"],
     )
     assert result.exit_code == 0
-    assert "deal-austin-multifamily" in result.output
-    assert "25,000,000.00" in result.output
-    assert "Scaffold pipeline execution initialized successfully" in result.output
+    clean_out = _strip_ansi(result.output)
+    assert "deal-austin-multifamily" in clean_out
+    assert "25,000,000.00" in clean_out
+    assert "Scaffold pipeline execution initialized successfully" in clean_out
 
 
 def test_cli_no_args(cli_runner: CliRunner):
     """Verify CLI without arguments displays banner."""
     result = cli_runner.invoke(cli, [])
     assert result.exit_code == 0
-    assert "PropRisk Swarm" in result.output
+    assert "PropRisk Swarm" in _strip_ansi(result.output)
 
 
 def test_cli_main_entrypoint(monkeypatch):

@@ -14,7 +14,7 @@ from rich.table import Table
 from proprisk_swarm import __version__
 from proprisk_swarm.config import get_settings
 
-console = Console()
+console = Console(highlight=False)
 
 
 @click.group(invoke_without_command=True)
